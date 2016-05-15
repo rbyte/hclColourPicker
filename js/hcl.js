@@ -1,3 +1,9 @@
+/*
+* Matthias Graf 2016
+* GNU AGPL v3
+* matthias.graf@mgrf.de
+* */
+
 const mainColorHeight = 0.6
 const sliderWidth = 1
 const sliderHeight = 0.1
