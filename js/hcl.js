@@ -4,17 +4,13 @@
 * matthias.graf@mgrf.de
 * */
 
-const mainColorHeight = 0.6
 const sliderWidth = 1
-const sliderHeight = 0.1
 const sliderX = 0
 const knobSize = 30
 // hits performance
 const numberOfGradientStops = 15
-
-var dragInProgress
-var dragStart
 var mousePos
+var mainColorHeight = 0.4
 
 // https://de.wikipedia.org/wiki/LCh-Farbraum
 // hue, chroma, luminance
@@ -63,23 +59,47 @@ function updateScreenElemsSize() {
 window.onresize = e => updateScreenElemsSize()
 window.onresize()
 
+function updateHeights() {
+	mainColor.attr("height", (mainColorHeight*100)+"%")
+	rgbLabel.attr("y", (mainColorHeight-0.08)*100+"%")
+	hslLabel.attr("y", (mainColorHeight-0.02)*100+"%")
+	colorPickerText.attr("y", (mainColorHeight+0.08)*100+"%")
+	sizeShifter.attr("y", mainColorHeight*100+"%")
+	
+	var sliderHeight = (1-mainColorHeight-0.1)/3
+	
+	;[..."hcl"].forEach((name, times) => {
+		sliders[name]
+			.attr("y", (mainColorHeight+0.1+times*sliderHeight)*100+"%")
+			.attr("height", sliderHeight*0.9*100+"%")
+	})
+}
+
 var defs = svg.append("defs")
 
 var mainColor = svg.append("rect")
 	.attr("x", 0)
 	.attr("y", 0)
 	.attr("width", "100%")
-	.attr("height", (mainColorHeight*100)+"%")
 
-var rgbLabel = svg.append("text")
-	.attr("class", "colorLabel")
-	.attr("y", (mainColorHeight-0.08)*100+"%")
-var hslLabel = svg.append("text")
-	.attr("class", "colorLabel")
-	.attr("y", (mainColorHeight-0.02)*100+"%")
+var rgbLabel = svg.append("text").attr("class", "colorLabel")
+var hslLabel = svg.append("text").attr("class", "colorLabel")
+
+var sizeShifter = svg.append("rect")
+	.attr("class", "sizeShifter")
+	.attr("x", 0)
+	.attr("width", "100%")
+	.attr("height", (0.02*100)+"%")
+	.call(d3.behavior.drag()
+		.on("drag", function (d) {
+			var yPercent = d3.event.y/viewBox.h
+			mainColorHeight = Math.max(0.2, Math.min(yPercent, 0.7))
+			updateHeights()
+		})
+	)
+
 var colorPickerText = svg.append("text")
 	.attr("class", "colorPickerText")
-	.attr("y", (mainColorHeight+0.08)*100+"%")
 	.text("HCL (cylindrical CIELab)")
 
 ;[rgbLabel, hslLabel, colorPickerText].forEach(e => e.attr("x", 1+"%"))
@@ -140,9 +160,7 @@ function slider(name, times) {
 	// inner svg for relative positioning
 	var s = sliders[name] = sliders.append("svg")
 		.attr("x", sliderX*100+"%")
-		.attr("y", (mainColorHeight+0.1+times*sliderHeight)*100+"%")
 		.attr("width", sliderWidth*100+"%")
-		.attr("height", sliderHeight*0.9*100+"%")
 	
 	s.append("rect")
 		.attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%")
@@ -173,15 +191,10 @@ function slider(name, times) {
 	})
 	.call(d3.behavior.drag()
 		.on("dragstart", function (d) {
-			dragStart = {x: mousePos[0], y: mousePos[1]}
 			update()
 		})
 		.on("drag", function (d) {
-			dragInProgress = true
 			update()
-		})
-		.on("dragend", function (d) {
-			dragInProgress = false
 		})
 	)
 	
@@ -192,6 +205,7 @@ updateColour()
 slider("h", 0)
 slider("c", 1)
 slider("l", 2)
+updateHeights()
 ;[..."hcl"].forEach(e => {
 	adjustGradient(e)
 	updateKnobAndLabel(e)
