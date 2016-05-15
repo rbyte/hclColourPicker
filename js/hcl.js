@@ -43,6 +43,20 @@ var svg = d3.select("#vis")
 	.attr("width", "100%")
 	.attr("height", "100%")
 
+// this is not necessary. the svg will resize itself automatically. however, the font will be distorted. we do this only to get undistorted fonts
+function updateScreenElemsSize() {
+	var bb = document.querySelector("#vis svg").getBoundingClientRect()
+	if (bb.width <= 0 || bb.height <= 0)
+		return
+	w = bb.width
+	h = bb.height
+	viewBox.h = viewBox.w*h/w
+	viewBox.update()
+}
+
+window.onresize = e => updateScreenElemsSize()
+window.onresize()
+
 var defs = svg.append("defs")
 
 var mainColor = svg.append("rect")
@@ -88,6 +102,7 @@ function adjustGradient(name) {
 }
 
 function updateKnobAndLabel(name) {
+	// TODO I would want this X to be in percent, but transform seemingly only permits absolute values
 	sliders[name].knob.attr("transform", "translate("+(color[name]/colorMax[name]*sliderWidth*viewBox.w)+",0)")
 	var xRound = color[name].toFixed(0)
 	sliders[name].label
