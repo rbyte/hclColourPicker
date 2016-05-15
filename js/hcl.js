@@ -16,9 +16,9 @@ var color = {h: 130, c: 40, l: 80}
 
 if (window.localStorage && window.localStorage.hcl) {
 	try {
-		var {h, c, l} = JSON.parse(window.localStorage.hcl)
-		console.assert(h && c && l && h>0 && c>0 && l>0)
-		color = {h, c, l}
+		var c = JSON.parse(window.localStorage.hcl)
+		console.assert(c.h>0 && c.c>0 && c.l>0)
+		color = c
 	} catch(e) {}
 }
 
