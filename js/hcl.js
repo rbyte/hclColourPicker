@@ -13,6 +13,15 @@ var mousePos
 // https://de.wikipedia.org/wiki/LCh-Farbraum
 // hue, chroma, luminance
 var color = {h: 130, c: 40, l: 80}
+
+if (window.localStorage && window.localStorage.hcl) {
+	try {
+		var {h, c, l} = JSON.parse(window.localStorage.hcl)
+		console.assert(h && c && l && h>0 && c>0 && l>0)
+		color = {h, c, l}
+	} catch(e) {}
+}
+
 var colorMax = {h: 360, c: 140, l: 100}
 
 var viewBox = {
@@ -88,17 +97,19 @@ function updateKnobAndLabel(name) {
 }
 
 function updateColour({h, c, l} = color) {
-	var c = chroma.hcl(h, c, l)
-	mainColor.style({"fill": c.hex()})
+	window.localStorage.hcl = JSON.stringify({h, c, l})
+	
+	var farbe = chroma.hcl(h, c, l)
+	mainColor.style({"fill": farbe.hex()})
 	rgbLabel.text("RGB "
-		+c.get('rgb.r')+", "
-		+c.get('rgb.g')+", "
-		+c.get('rgb.b')
+		+farbe.get('rgb.r')+", "
+		+farbe.get('rgb.g')+", "
+		+farbe.get('rgb.b')
 	)
 	hslLabel.text("HSL  "
-		+(c.get('hsl.h')).toFixed(0)+", "
-		+(c.get('hsl.s')*100).toFixed(0)+"%, "
-		+(c.get('hsl.l')*100).toFixed(0)+"%"
+		+(farbe.get('hsl.h')).toFixed(0)+", "
+		+(farbe.get('hsl.s')*100).toFixed(0)+"%, "
+		+(farbe.get('hsl.l')*100).toFixed(0)+"%"
 	)
 }
 
