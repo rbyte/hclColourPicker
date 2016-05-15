@@ -4,6 +4,8 @@
 }
 body {
 	background-color: #222;
+	color: hsl(10, 49%, 49%);
+	font-family: "Open Sans", sans;
 }
 #vis {
 	position: fixed;
@@ -13,8 +15,30 @@ body {
 	padding: 5%;
 }
 #vis svg {
-	
+	overflow: visible;
 }
 #vis svg svg {
 	cursor: move;
+}
+.colorLabel, .colorPickerText {
+	font-size: 26px;
+	font-weight: 100;
+	text-anchor: start;
+}
+.colorPickerText {
+	fill: lightgray;
+}
+.colorLabel {
+	fill: black;
+	filter: drop-shadow(0 0 2px white);
+	-webkit-filter: drop-shadow(0 0 2px white);
+}
+.sliderLabel {
+	font-size: 16px;
+	text-anchor: middle;
+	/*font-weight: 100;*/
+}
+.sliderKnob {
+	fill: rgba(255, 255, 255, 0.7);
+	stroke: #222
 }

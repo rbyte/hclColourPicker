@@ -1,7 +1,22 @@
-var svg
+const mainColorHeight = 0.6
+const sliderWidth = 1
+const sliderHeight = 0.1
+const sliderX = 0
+const knobSize = 30
+// hits performance
+const numberOfGradientStops = 15
+
+var dragInProgress
+var dragStart
+var mousePos
+
+// https://de.wikipedia.org/wiki/LCh-Farbraum
+// hue, chroma, luminance
+var color = {h: 130, c: 40, l: 80}
+var colorMax = {h: 360, c: 140, l: 100}
 
 var viewBox = {
-	x: 0, y: 0, w: 1000, h: 500,
+	x: 0, y: 0, w: 1000, h: 600,
 	toString: function () {
 		return this.x + " " + this.y + " " + this.w + " " + this.h
 	},
@@ -10,7 +25,7 @@ var viewBox = {
 	}
 }
 
-svg = d3.select("#vis")
+var svg = d3.select("#vis")
 	.append("svg")
 	.attr("xmlns", "http://www.w3.org/2000/svg")
 	.attr("viewBox", viewBox)
@@ -25,99 +40,103 @@ var mainColor = svg.append("rect")
 	.attr("x", 0)
 	.attr("y", 0)
 	.attr("width", "100%")
-	.attr("height", "65%")
+	.attr("height", (mainColorHeight*100)+"%")
 
-function createVerticalLinearGradient(id) {
-	defs.append("linearGradient")
-		.attr("id", id+"_vert")
-		.attr("xlink:href", "#"+id)
-		.attr("gradientTransform", "rotate(90)")
-}
+var rgbLabel = svg.append("text")
+	.attr("class", "colorLabel")
+	.attr("y", (mainColorHeight-0.08)*100+"%")
+var hslLabel = svg.append("text")
+	.attr("class", "colorLabel")
+	.attr("y", (mainColorHeight-0.02)*100+"%")
+var colorPickerText = svg.append("text")
+	.attr("class", "colorPickerText")
+	.attr("y", (mainColorHeight+0.08)*100+"%")
+	.text("HCL (cylindrical CIELab)")
+
+;[rgbLabel, hslLabel, colorPickerText].forEach(e => e.attr("x", 1+"%"))
+
 
 var chromaGradient = {}
-
-chromaGradient.h = defs.append("linearGradient").attr("id", "chromaGradient_h")
-chromaGradient.c = defs.append("linearGradient").attr("id", "chromaGradient_c")
-chromaGradient.l = defs.append("linearGradient").attr("id", "chromaGradient_l")
-createVerticalLinearGradient("chromaGradient_h")
-createVerticalLinearGradient("chromaGradient_c")
-createVerticalLinearGradient("chromaGradient_l")
+;[..."hcl"].forEach(e => {
+	chromaGradient[e] = defs.append("linearGradient").attr("id", "chromaGradient_"+e)
+	chromaGradient[e].stopArray = []
+	new Array(numberOfGradientStops).fill(true).forEach(x =>
+		chromaGradient[e].stopArray.push(chromaGradient[e].append("stop"))
+	)
+})
 
 function adjustGradient(name) {
-	var numberOfStops = 5
-	chromaGradient[name].selectAll("*").remove()
-	for (var i=0; i<numberOfStops; i++) {
-		var offset = i/(numberOfStops-1)
+	for (var i=0; i<numberOfGradientStops; i++) {
+		var offset = i/(numberOfGradientStops-1)
 		
 		var copy = {h: color.h, c: color.c, l: color.l}
 		copy[name] = offset*colorMax[name]
 		
-		chromaGradient[name].append("stop")
+		chromaGradient[name].stopArray[i]
 			.style({"stop-color": chroma.hcl(copy.h, copy.c, copy.l).hex()})
 			.attr("offset", offset)
 	}
 }
 
 function updateKnobAndLabel(name) {
-	sliders[name].knob.attr("transform", "translate("+(color[name]/colorMax[name]*viewBox.w)+",0)")
+	sliders[name].knob.attr("transform", "translate("+(color[name]/colorMax[name]*sliderWidth*viewBox.w)+",0)")
 	var xRound = color[name].toFixed(0)
 	sliders[name].label
 		.attr("x", (color[name]/colorMax[name]*100)+"%")
 		.text(xRound)
+	
 }
 
-var dragInProgress
-var dragStart
-var mousePos
+function updateColour({h, c, l} = color) {
+	var c = chroma.hcl(h, c, l)
+	mainColor.style({"fill": c.hex()})
+	rgbLabel.text("RGB "
+		+c.get('rgb.r')+", "
+		+c.get('rgb.g')+", "
+		+c.get('rgb.b')
+	)
+	hslLabel.text("HSL  "
+		+(c.get('hsl.h')).toFixed(0)+", "
+		+(c.get('hsl.s')*100).toFixed(0)+"%, "
+		+(c.get('hsl.l')*100).toFixed(0)+"%"
+	)
+}
 
 var sliders = svg.append("g")
-var sliderWidth = 1.0
-var sliderHeight = 0.1
-
-// https://de.wikipedia.org/wiki/LCh-Farbraum
-// Gelb, Grün, Blau und Rot (h=90, 180, 270, 360°)
-var color = {h: 130, c: 40, l: 80}
-var colorMax = {h: 360, c: 140, l: 100}
-function setColor({h, c, l} = color) {
-	mainColor.style({"fill": chroma.hcl(h, c, l).hex()})
-}
-setColor()
-
 
 function slider(name, times) {
-	sliders[name] = sliders.append("svg")
-		.attr("x", "0")
-		.attr("y", (70+times*sliderHeight*100)+"%")
-		.attr("width", (sliderWidth*100)+"%")
-		.attr("height", ((sliderHeight*0.9)*100)+"%")
+	// inner svg for relative positioning
+	var s = sliders[name] = sliders.append("svg")
+		.attr("x", sliderX*100+"%")
+		.attr("y", (mainColorHeight+0.1+times*sliderHeight)*100+"%")
+		.attr("width", sliderWidth*100+"%")
+		.attr("height", sliderHeight*0.9*100+"%")
 	
-	sliders[name].append("rect")
+	s.append("rect")
 		.attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%")
 		.style({fill: "url(#chromaGradient_"+name+")"})
 	
-	sliders[name].knob = sliders[name].append("path")
-		// equilateral triangle height: sin(60°)*side = 0.866*side
-		.attr("d", "M-25,-1 L25,-1 L-1,26 Z") // triangle
-		.style({fill: "rgba(255, 255, 255, 0.7)", stroke: "#222"})
-	
-	sliders[name].label = sliders[name].append("text")
-		.attr("x", 50+"%")
-		.attr("y", 11+"px")
-		.attr("text-anchor", "middle")
-		.attr({"font-size": "14px", "font-family": "sans"})
-	sliders[name].label.text(color[name])
+	s.knob = s.append("path")
+		.attr("class", "sliderKnob")
+		// triangle
+		.attr("d", "M-"+knobSize+",-1 L"+knobSize+",-1 L0,"+knobSize+" Z")
+		
+	s.label = s.append("text")
+		.attr("class", "sliderLabel")
+		.attr("y", 14+"px")
+		.text(color[name])
 	
 	function update() {
-		// TODO refactor sliderWidth ... x should refer to inner svg viewbox
-		var x = mousePos[0]/viewBox.w/sliderWidth
+		var x = (mousePos[0]/viewBox.w - sliderX)/sliderWidth
+		x = Math.max(0, Math.min(x, 1))
 		color[name] = x * colorMax[name]
-		setColor()
+		updateColour()
 		// adjust the OTHER gradients
 		;[..."hcl"].filter(e => e !== name).forEach(e => adjustGradient(e))
 		updateKnobAndLabel(name)
 	}
 	
-	sliders[name].on("mousemove", function (d, i) {
+	s.on("mousemove", function (d, i) {
 		mousePos = d3.mouse(this)
 	})
 	.call(d3.behavior.drag()
@@ -134,9 +153,10 @@ function slider(name, times) {
 		})
 	)
 	
-	return sliders[name]
+	return s
 }
 
+updateColour()
 slider("h", 0)
 slider("c", 1)
 slider("l", 2)
@@ -144,7 +164,4 @@ slider("l", 2)
 	adjustGradient(e)
 	updateKnobAndLabel(e)
 })
-
-
-
 
