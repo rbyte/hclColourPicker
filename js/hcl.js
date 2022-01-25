@@ -139,15 +139,23 @@ function updateKnobAndLabel(name) {
 	
 }
 
+function updateColourRGB(hex) {
+	var farbe = chroma(hex)
+	console.log(farbe, hex)
+	updateColour({h:farbe.get('hcl.h'), c:farbe.get('hcl.c'), l:farbe.get('hcl.l')})
+	updateAllSliders()
+}
+
 function updateColour({h, c, l} = color) {
 	window.localStorage.hcl = JSON.stringify({h, c, l})
+	color = {h: h, c: c, l: l}
 	
 	var farbe = chroma.hcl(h, c, l)
 	mainColor.style({"fill": farbe.hex()})
 	rgbLabel.text("RGB "
 		+farbe.get('rgb.r')+", "
 		+farbe.get('rgb.g')+", "
-		+farbe.get('rgb.b')
+		+farbe.get('rgb.b')+" "+farbe.hex()
 	)
 	hslLabel.text("HSL  "
 		+(farbe.get('hsl.h')).toFixed(0)+", "
@@ -203,14 +211,33 @@ function slider(name, times) {
 	return s
 }
 
+function updateAllSliders() {
+	;[..."hcl"].forEach(e => {
+		adjustGradient(e)
+		updateKnobAndLabel(e)
+	})
+}
+
 updateColour()
 slider("h", 0)
 slider("c", 1)
 slider("l", 2)
 updateHeights()
-;[..."hcl"].forEach(e => {
-	adjustGradient(e)
-	updateKnobAndLabel(e)
-})
+updateAllSliders()
+
+
+const visJS = document.querySelector('#vis');
+
+visJS.addEventListener('paste', (event) => {
+    let paste = (event.clipboardData || window.clipboardData).getData('text')
+	if (paste.match(/^#(?:[0-9a-fA-F]{3,4}){1,2}$/g)) {
+		updateColourRGB(paste)
+	} else {
+		console.log("pasted value must be RGB Hex (e.g. #32356D), got: ", paste)
+	}
+    event.preventDefault()
+});
+
+
 	
 })()
