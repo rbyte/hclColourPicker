@@ -4,6 +4,8 @@
 * matthias.graf@mgrf.de
 * */
 
+(function() {
+
 const sliderWidth = 1
 const sliderX = 0
 const knobSize = 30
@@ -210,4 +212,5 @@ updateHeights()
 	adjustGradient(e)
 	updateKnobAndLabel(e)
 })
-
+	
+})()
